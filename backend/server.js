@@ -15,62 +15,82 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI)
-  .then(async () => {
-    console.log("✅ Berhasil terhubung ke MongoDB Atlas!");
-    await seedInitialData();
-  })
-  .catch(err => console.error("❌ Gagal terhubung ke MongoDB:", err));
+// Koneksi ke MongoDB Atlas
+if (MONGO_URI) {
+  mongoose.connect(MONGO_URI)
+    .then(async () => {
+      console.log("✅ Berhasil terhubung ke MongoDB Atlas!");
+      await seedInitialData();
+    })
+    .catch(err => console.error("❌ Gagal terhubung ke MongoDB:", err));
+} else {
+  console.error("❌ MONGO_URI tidak ditemukan di Environment Variables!");
+}
 
 async function seedInitialData() {
-  const adminCount = await User.countDocuments({ role: 'admin' });
-  if (adminCount === 0) {
-    await User.create({
-      uid: 'admin_master_saset',
-      name: 'Admin Saset Express',
-      email: 'admin@saset.com',
-      password: 'admin123',
-      role: 'admin',
-      address: 'Kebun Utama Saset Express, Surabaya',
-      wa: '081200009999',
-      photo: 'https://placehold.co/150x150/FACC15/0F172A?text=ADMIN'
-    });
-  }
+  try {
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount === 0) {
+      await User.create({
+        uid: 'admin_master_saset',
+        name: 'Admin Saset Express',
+        email: 'admin@saset.com',
+        password: 'admin123',
+        role: 'admin',
+        address: 'Kebun Utama Saset Express, Surabaya',
+        wa: '085182291658',
+        photo: 'https://placehold.co/150x150/FACC15/0F172A?text=ADMIN'
+      });
+    }
 
-  const prodCount = await Product.countDocuments();
-  if (prodCount === 0) {
-    await Product.insertMany([
-      {
-        id: 'prod_1',
-        name: 'Bayam Hijau Hidroponik (250g)',
-        price: 7500,
-        stock: 30,
-        description: 'Bayam hijau segar bebas pestisida, dipanen pagi ini langsung dari instalasi hidroponik.',
-        image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600&q=80'
-      },
-      {
-        id: 'prod_2',
-        name: 'Pakcoy Organik Segar (300g)',
-        price: 9000,
-        stock: 25,
-        description: 'Pakcoy baby organik dengan batang putih renyah dan daun hijau pekat.',
-        image: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&w=600&q=80'
-      }
-    ]);
-  }
+    const prodCount = await Product.countDocuments();
+    if (prodCount === 0) {
+      await Product.insertMany([
+        {
+          id: 'prod_1',
+          name: 'Bayam Hijau Hidroponik (250g)',
+          price: 7500,
+          stock: 30,
+          description: 'Bayam hijau segar bebas pestisida, dipanen pagi ini langsung dari instalasi hidroponik.',
+          image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=600&q=80'
+        },
+        {
+          id: 'prod_2',
+          name: 'Pakcoy Organik Segar (300g)',
+          price: 9000,
+          stock: 25,
+          description: 'Pakcoy baby organik dengan batang putih renyah dan daun hijau pekat.',
+          image: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&w=600&q=80'
+        }
+      ]);
+    }
 
-  const msgCount = await Message.countDocuments();
-  if (msgCount === 0) {
-    await Message.create({
-      id: 'msg_1',
-      channel: 'group',
-      senderId: 'admin_master_saset',
-      senderName: 'Admin Saset Express',
-      senderRole: 'admin',
-      text: 'Halo! Selamat datang di Grup Komunitas Saset Express. Seluruh data kini terhubung ke MongoDB Atlas.'
-    });
+    const msgCount = await Message.countDocuments();
+    if (msgCount === 0) {
+      await Message.create({
+        id: 'msg_1',
+        channel: 'group',
+        senderId: 'admin_master_saset',
+        senderName: 'Admin Saset Express',
+        senderRole: 'admin',
+        text: 'Halo! Selamat datang di Grup Komunitas Saset Express. Seluruh data kini terhubung ke MongoDB Atlas.'
+      });
+    }
+  } catch (err) {
+    console.error("Gagal melakukan seeding data awal:", err);
   }
 }
+
+// === TAMBAHAN UTAMA: Mencegah error 404 di Root URL Vercel ===
+app.get('/', (req, res) => {
+  res.json({ 
+    status: "success", 
+    message: "🚀 Saset Express Backend API Berjalan Normal & Terhubung ke MongoDB Atlas!",
+    timestamp: Date.now() 
+  });
+});
+
+// --- API ENDPOINTS ---
 
 app.get('/api/sync', async (req, res) => {
   try {
