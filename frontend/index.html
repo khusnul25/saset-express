@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SASET EXPRESS — Sayur Segar Terbarukan Express</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <style>
+    :root {
+      --bg-cream: #FEFCE8;
+      --lime: #A3E635;
+      --yellow: #FACC15;
+      --pink: #F472B6;
+      --orange: #FB923C;
+      --cyan: #38BDF8;
+      --ink: #0F172A;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-cream);
+      background-image: radial-gradient(#0F172A 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .nb-box { border: 3px solid #0F172A; box-shadow: 6px 6px 0px #0F172A; border-radius: 14px; transition: transform 0.15s ease; }
+    .nb-box-lg { border: 3.5px solid #0F172A; box-shadow: 9px 9px 0px #0F172A; border-radius: 18px; }
+    .nb-box-sm { border: 2.5px solid #0F172A; box-shadow: 4px 4px 0px #0F172A; border-radius: 10px; }
+    .nb-card-hover:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0px #0F172A; }
+    .nb-btn { border: 3px solid #0F172A; box-shadow: 4px 4px 0px #0F172A; border-radius: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.12s ease; }
+    .nb-btn:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #0F172A; }
+    .nb-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .nb-input { border: 3px solid #0F172A; box-shadow: 3px 3px 0px #0F172A; border-radius: 12px; background: #FFF; padding: 0.65rem 0.9rem; font-weight: 600; outline: none; width: 100%; }
+    .nb-badge { border: 2px solid #0F172A; box-shadow: 2px 2px 0px #0F172A; border-radius: 9999px; font-weight: 800; font-size: 0.75rem; padding: 0.2rem 0.7rem; display: inline-flex; align-items: center; gap: 0.3rem; }
+    @keyframes popIn { 0% { transform: scale(0.92) translateY(10px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+    .animate-pop { animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- AUTH SCREEN -->
+  <section id="auth-screen" class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div class="lg:col-span-5 nb-box-lg bg-[#A3E635] p-6 sm:p-8 flex flex-col justify-between">
+        <div>
+          <div class="inline-flex items-center gap-2 bg-[#FACC15] nb-box-sm px-3 py-1.5 mb-5">
+            <span class="w-3 h-3 rounded-full bg-[#0F172A] animate-ping"></span>
+            <span class="text-xs font-extrabold uppercase">MongoDB Atlas Cloud Connected</span>
+          </div>
+          <h1 class="font-display text-4xl sm:text-5xl font-extrabold mb-4">SASET<br/>EXPRESS</h1>
+          <p class="font-semibold text-slate-900 leading-relaxed mb-6">Seluruh data akun, pesanan, dan chat terhubung terpusat secara real-time ke database MongoDB.</p>
+        </div>
+      </div>
+      <div class="lg:col-span-7 nb-box-lg bg-white p-6 sm:p-8 flex flex-col justify-between">
+        <div>
+          <div class="grid grid-cols-2 gap-3 mb-6 bg-[#FEFCE8] p-2 nb-box-sm">
+            <button type="button" id="tab-login" onclick="switchAuthTab('login')" class="nb-btn bg-[#FACC15] py-2.5 text-sm">Masuk Akun</button>
+            <button type="button" id="tab-register" onclick="switchAuthTab('register')" class="nb-btn bg-white py-2.5 text-sm">Daftar Pembeli</button>
+          </div>
+
+          <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+            <h2 class="font-display text-2xl font-extrabold mb-1">Selamat Datang Kembali!</h2>
+            <div><label class="block text-sm font-extrabold mb-1.5">Email</label><input type="email" id="login-email" required class="nb-input" /></div>
+            <div><label class="block text-sm font-extrabold mb-1.5">Password</label><input type="password" id="login-password" required class="nb-input" /></div>
+            <button type="submit" class="nb-btn bg-[#A3E635] w-full py-3.5 text-base">Masuk Sekarang</button>
+          </form>
+
+          <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3.5 hidden">
+            <h2 class="font-display text-2xl font-extrabold mb-1">Buat Akun Pembeli Baru</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div><label class="block text-sm font-extrabold mb-1">Nama Lengkap *</label><input type="text" id="reg-name" required class="nb-input" /></div>
+              <div><label class="block text-sm font-extrabold mb-1">Email *</label><input type="email" id="reg-email" required class="nb-input" /></div>
+            </div>
+            <div><label class="block text-sm font-extrabold mb-1">Password *</label><input type="password" id="reg-password" required minlength="6" class="nb-input" /></div>
+            <div><label class="block text-sm font-extrabold mb-1">Alamat Pengiriman *</label><textarea id="reg-address" required rows="2" class="nb-input"></textarea></div>
+            <button type="submit" class="nb-btn bg-[#FACC15] w-full py-3.5 text-base">Daftar & Gabung</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP SHELL -->
+  <div id="app-shell" class="hidden flex-1 flex flex-col">
+    <header class="sticky top-0 z-40 bg-white border-b-4 border-slate-900 px-4 sm:px-6 py-3">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="navigateDefault()">
+          <div class="w-11 h-11 bg-[#A3E635] nb-box-sm flex items-center justify-center"><i data-lucide="leaf" class="w-6 h-6"></i></div>
+          <div>
+            <span class="font-display text-xl font-extrabold">SASET EXPRESS</span>
+            <span id="role-badge" class="nb-badge bg-[#FACC15] text-[10px] ml-2">PEMBELI</span>
+          </div>
+        </div>
+        <nav id="main-nav" class="flex items-center gap-2 flex-wrap"></nav>
+        <button onclick="handleLogout()" class="nb-btn bg-[#FB923C] px-3 py-2 text-xs">Keluar</button>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+      <!-- MARKETPLACE -->
+      <div id="view-marketplace" class="hidden space-y-6 animate-pop">
+        <div class="nb-box-lg bg-[#A3E635] p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div><h2 class="font-display text-3xl font-extrabold">Pilih Sayur Segar Hari Ini!</h2></div>
+          <button onclick="openCartModal()" class="nb-btn bg-[#FACC15] px-4 py-2.5 relative">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i> Keranjang
+            <span id="cart-count-badge" class="bg-[#F472B6] border-2 border-slate-900 text-xs px-2 rounded-full">0</span>
+          </button>
+        </div>
+        <div id="buyer-product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+      </div>
+
+      <!-- MY ORDERS -->
+      <div id="view-my-orders" class="hidden space-y-6 animate-pop">
+        <h2 class="font-display text-3xl font-extrabold">Pesanan Saya</h2>
+        <div id="buyer-orders-list" class="space-y-4"></div>
+      </div>
+
+      <!-- PROFILE -->
+      <div id="view-profile" class="hidden max-w-3xl mx-auto animate-pop">
+        <div class="nb-box-lg bg-white p-6 sm:p-8">
+          <h2 class="font-display text-3xl font-extrabold mb-4">Profil Pengguna</h2>
+          <form onsubmit="saveUserProfile(event)" class="space-y-4">
+            <div><label class="block text-sm font-extrabold mb-1">Nama</label><input type="text" id="prof-name" required class="nb-input" /></div>
+            <div><label class="block text-sm font-extrabold mb-1">WhatsApp</label><input type="text" id="prof-wa" class="nb-input" /></div>
+            <div><label class="block text-sm font-extrabold mb-1">Alamat</label><textarea id="prof-address" rows="3" required class="nb-input"></textarea></div>
+            <button type="submit" class="nb-btn bg-[#A3E635] px-6 py-3">Simpan Profil</button>
+          </form>
+          <div id="buyer-delete-account-zone" class="hidden mt-6 pt-4 border-t-2 border-dashed border-slate-900">
+            <button onclick="confirmDeleteBuyerAccount()" class="nb-btn bg-[#F472B6] px-4 py-2 text-xs">Hapus Akun Permanen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT ROOM -->
+      <div id="view-chat" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 animate-pop h-[75vh]">
+        <div class="lg:col-span-4 nb-box bg-white p-4 flex flex-col justify-between">
+          <div>
+            <h3 class="font-display text-xl font-extrabold mb-3">Ruang Obrolan</h3>
+            <button id="btn-chat-group" onclick="selectChatChannel('group')" class="nb-btn bg-[#A3E635] w-full p-3 justify-start mb-2">Grup Komunitas Saset</button>
+            <div id="private-chat-selector-area"></div>
+          </div>
+        </div>
+        <div class="lg:col-span-8 nb-box bg-white flex flex-col h-full">
+          <div class="bg-[#FACC15] px-5 py-3 border-b-3 border-slate-900"><h4 id="chat-active-title" class="font-display font-extrabold">Grup Komunitas</h4></div>
+          <div id="chat-messages-feed" class="flex-1 p-4 overflow-y-auto space-y-3 bg-[#FEFCE8]/50"></div>
+          <form onsubmit="sendChatMessage(event)" class="p-3 bg-white border-t-3 border-slate-900 flex gap-2">
+            <input type="text" id="chat-message-input" required placeholder="Tulis pesan..." class="nb-input text-sm" />
+            <button type="submit" class="nb-btn bg-[#A3E635] px-4 py-2"><i data-lucide="send" class="w-5 h-5"></i></button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ADMIN DASHBOARD -->
+      <div id="view-admin" class="hidden space-y-6 animate-pop">
+        <div class="nb-box-lg bg-[#FACC15] p-6 flex justify-between items-center">
+          <h2 class="font-display text-3xl font-extrabold">Dashboard Admin</h2>
+          <div class="flex gap-2">
+            <button onclick="switchAdminTab('orders')" class="nb-btn bg-[#A3E635] px-4 py-2 text-sm">Pesanan</button>
+            <button onclick="switchAdminTab('products')" class="nb-btn bg-white px-4 py-2 text-sm">Kelola Produk</button>
+          </div>
+        </div>
+        <div id="admin-panel-orders" class="space-y-4"></div>
+        <div id="admin-panel-products" class="hidden space-y-4">
+          <form onsubmit="handleAdminAddProduct(event)" class="nb-box bg-white p-5 space-y-3">
+            <h3 class="font-display font-extrabold text-lg">Tambah Produk Sayur Baru</h3>
+            <input type="text" id="new-prod-name" placeholder="Nama Sayur" required class="nb-input text-sm" />
+            <input type="number" id="new-prod-price" placeholder="Harga (Rp)" required class="nb-input text-sm" />
+            <input type="number" id="new-prod-stock" placeholder="Stok" required class="nb-input text-sm" />
+            <textarea id="new-prod-desc" placeholder="Deskripsi" required class="nb-input text-sm"></textarea>
+            <input type="text" id="new-prod-img" placeholder="URL Gambar / Link Foto" required class="nb-input text-sm" />
+            <button type="submit" class="nb-btn bg-[#A3E635] px-4 py-2 text-sm">Upload ke MongoDB</button>
+          </form>
+          <div id="admin-products-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="product-detail-modal" class="fixed inset-0 z-50 hidden bg-slate-900/70 flex items-center justify-center p-4">
+    <div class="nb-box-lg bg-white max-w-lg w-full p-6 space-y-4 animate-pop">
+      <h3 id="modal-prod-name" class="font-display text-2xl font-extrabold"></h3>
+      <img id="modal-prod-img" class="w-full h-48 object-cover rounded-xl border-2 border-slate-900" />
+      <p id="modal-prod-desc" class="text-sm font-semibold"></p>
+      <p id="modal-prod-price" class="text-xl font-extrabold text-emerald-700"></p>
+      <button onclick="addModalProductToCart()" class="nb-btn bg-[#A3E635] w-full py-3">Masukkan Keranjang</button>
+      <button onclick="closeProductDetailModal()" class="nb-btn bg-white w-full py-2">Tutup</button>
+    </div>
+  </div>
+
+  <div id="cart-checkout-modal" class="fixed inset-0 z-50 hidden bg-slate-900/70 flex items-center justify-center p-4">
+    <div class="nb-box-lg bg-white max-w-lg w-full p-6 space-y-4 animate-pop">
+      <h3 class="font-display text-2xl font-extrabold">Keranjang Belanja</h3>
+      <div id="cart-items-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      <p id="checkout-total-price" class="font-display text-xl font-extrabold">Total: Rp 0</p>
+      <button onclick="submitCheckoutOrder()" class="nb-btn bg-[#A3E635] w-full py-3">Buat Pesanan (MongoDB)</button>
+      <button onclick="closeCartModal()" class="nb-btn bg-white w-full py-2">Tutup</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:5000/api";
+    let currentUser = null;
+    let allUsers = [], products = [], orders = [], chatMessages = [], storeSettings = { qrisImage: "" };
+    let cart = [], selectedModalProduct = null, activeChatChannel = "group";
+
+    window.showToast = function(msg, type="info") {
+      const c = document.getElementById("toast-container");
+      const t = document.createElement("div");
+      t.className = `nb-box-sm bg-[#A3E635] p-3 text-xs font-extrabold`;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    };
+
+    function formatRupiah(num) { return "Rp " + Number(num || 0).toLocaleString("id-ID"); }
+
+    async function syncWithMongoDB() {
+      try {
+        const res = await fetch(`${API_URL}/sync`);
+        const data = await res.json();
+        allUsers = data.users;
+        products = data.products;
+        orders = data.orders;
+        chatMessages = data.messages;
+        storeSettings.qrisImage = data.qrisImage;
+
+        if (currentUser) {
+          currentUser = allUsers.find(u => u.uid === currentUser.uid) || currentUser;
+          updateHeaderUserUI();
+        }
+        renderBuyerCatalog();
+        renderAdminProducts();
+        renderAdminOrders();
+        renderBuyerOrders();
+        renderChatMessages();
+      } catch (err) {
+        console.error("Gagal sinkronisasi MongoDB:", err);
+      }
+    }
+
+    setInterval(syncWithMongoDB, 2500);
+
+    window.switchAuthTab = function(tab) {
+      document.getElementById("form-login").classList.toggle("hidden", tab !== "login");
+      document.getElementById("form-register").classList.toggle("hidden", tab !== "register");
+    };
+
+    window.handleLogin = async function(e) {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim().toLowerCase();
+      const password = document.getElementById("login-password").value;
+      await syncWithMongoDB();
+
+      const user = allUsers.find(u => u.email.toLowerCase() === email && u.password === password);
+      if (!user) { showToast("Email atau password salah!", "error"); return; }
+      enterAppSession(user);
+    };
+
+    window.handleRegister = async function(e) {
+      e.preventDefault();
+      const name = document.getElementById("reg-name").value.trim();
+      const email = document.getElementById("reg-email").value.trim().toLowerCase();
+      const password = document.getElementById("reg-password").value;
+      const address = document.getElementById("reg-address").value.trim();
+
+      const newUser = {
+        uid: "buyer_" + Date.now(),
+        name, email, password, address,
+        wa: "", role: "buyer",
+        photo: `https://placehold.co/150x150/A3E635/0F172A?text=${name.charAt(0)}`
+      };
+
+      const res = await fetch(`${API_URL}/users`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser)
+      });
+      const data = await res.json();
+      if (data.success) {
+        enterAppSession(newUser);
+        showToast("Registrasi berhasil ke MongoDB!", "success");
+      }
+    };
+
+    function enterAppSession(user) {
+      currentUser = user;
+      document.getElementById("auth-screen").classList.add("hidden");
+      document.getElementById("app-shell").classList.remove("hidden");
+      updateHeaderUserUI();
+      buildNavigationForRole();
+      navigateDefault();
+    }
+
+    window.handleLogout = function() {
+      currentUser = null;
+      document.getElementById("app-shell").classList.add("hidden");
+      document.getElementById("auth-screen").classList.remove("hidden");
+    };
+
+    function updateHeaderUserUI() {
+      document.getElementById("role-badge").textContent = currentUser.role === "admin" ? "ADMIN" : "PEMBELI";
+    }
+
+    function buildNavigationForRole() {
+      const nav = document.getElementById("main-nav");
+      if (currentUser.role === "admin") {
+        nav.innerHTML = `
+          <button onclick="switchView('admin')" class="nb-btn bg-[#FACC15] px-3 py-2 text-xs">Dashboard</button>
+          <button onclick="switchView('chat')" class="nb-btn bg-white px-3 py-2 text-xs">Chat</button>
+        `;
+      } else {
+        nav.innerHTML = `
+          <button onclick="switchView('marketplace')" class="nb-btn bg-[#FACC15] px-3 py-2 text-xs">Katalog</button>
+          <button onclick="switchView('my-orders')" class="nb-btn bg-white px-3 py-2 text-xs">Pesanan</button>
+          <button onclick="switchView('chat')" class="nb-btn bg-white px-3 py-2 text-xs">Chat</button>
+          <button onclick="switchView('profile')" class="nb-btn bg-white px-3 py-2 text-xs">Profil</button>
+        `;
+      }
+      lucide.createIcons();
+    }
+
+    window.navigateDefault = function() { currentUser.role === "admin" ? switchView('admin') : switchView('marketplace'); };
+
+    window.switchView = function(v) {
+      ["marketplace", "my-orders", "profile", "chat", "admin"].forEach(x => {
+        document.getElementById(`view-${x}`).classList.add("hidden");
+      });
+      document.getElementById(`view-${v}`).classList.remove("hidden");
+      if (v === 'profile') loadProfileForm();
+      if (v === 'chat') { renderChatSidebar(); renderChatMessages(); }
+    };
+
+    window.renderBuyerCatalog = function() {
+      const grid = document.getElementById("buyer-product-grid");
+      if (!grid) return;
+      grid.innerHTML = products.map(p => `
+        <div onclick="openProductDetailModal('${p.id}')" class="nb-box nb-card-hover bg-white p-4 cursor-pointer flex flex-col justify-between">
+          <div>
+            <img src="${p.image}" class="w-full h-36 object-cover rounded-lg border-2 border-slate-900 mb-2" />
+            <h4 class="font-extrabold text-sm">${p.name}</h4>
+            <p class="text-xs text-slate-600 line-clamp-2">${p.description}</p>
+          </div>
+          <div class="mt-4 flex justify-between items-center">
+            <span class="font-bold text-emerald-700">${formatRupiah(p.price)}</span>
+            <span class="nb-badge bg-[#A3E635]">Stok: ${p.stock}</span>
+          </div>
+        </div>
+      `).join("");
+    };
+
+    window.openProductDetailModal = function(id) {
+      selectedModalProduct = products.find(p => p.id === id);
+      if (!selectedModalProduct) return;
+      document.getElementById("modal-prod-name").textContent = selectedModalProduct.name;
+      document.getElementById("modal-prod-img").src = selectedModalProduct.image;
+      document.getElementById("modal-prod-desc").textContent = selectedModalProduct.description;
+      document.getElementById("modal-prod-price").textContent = formatRupiah(selectedModalProduct.price);
+      document.getElementById("product-detail-modal").classList.remove("hidden");
+    };
+    window.closeProductDetailModal = function() { document.getElementById("product-detail-modal").classList.add("hidden"); };
+
+    window.addModalProductToCart = function() {
+      if (!selectedModalProduct) return;
+      cart.push({ productId: selectedModalProduct.id, name: selectedModalProduct.name, price: selectedModalProduct.price, image: selectedModalProduct.image, qty: 1 });
+      document.getElementById("cart-count-badge").textContent = cart.length;
+      closeProductDetailModal();
+      showToast("Berhasil masuk keranjang!");
+    };
+
+    window.openCartModal = function() {
+      const list = document.getElementById("cart-items-list");
+      list.innerHTML = cart.map(i => `<div class="nb-box-sm p-2 bg-[#FEFCE8] text-xs font-bold">${i.qty}x ${i.name} - ${formatRupiah(i.price)}</div>`).join("");
+      const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      document.getElementById("checkout-total-price").textContent = "Total: " + formatRupiah(total);
+      document.getElementById("cart-checkout-modal").classList.remove("hidden");
+    };
+    window.closeCartModal = function() { document.getElementById("cart-checkout-modal").classList.add("hidden"); };
+
+    window.submitCheckoutOrder = async function() {
+      if (cart.length === 0) return;
+      const totalAmount = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      const newOrder = {
+        id: "ord_" + Date.now(),
+        buyerId: currentUser.uid,
+        buyerName: currentUser.name,
+        buyerWa: currentUser.wa || "-",
+        buyerAddress: currentUser.address,
+        items: cart, totalAmount, paymentMethod: "CASH", status: "Lagi Diproses"
+      };
+
+      const res = await fetch(`${API_URL}/orders`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newOrder)
+      });
+      if ((await res.json()).success) {
+        cart = [];
+        document.getElementById("cart-count-badge").textContent = "0";
+        closeCartModal();
+        showToast("Pesanan tersimpan ke MongoDB!", "success");
+        switchView("my-orders");
+      }
+    };
+
+    window.renderBuyerOrders = function() {
+      const list = document.getElementById("buyer-orders-list");
+      if (!list) return;
+      const myOrders = orders.filter(o => o.buyerId === currentUser.uid);
+      list.innerHTML = myOrders.length === 0 ? `<p>Belum ada pesanan.</p>` : myOrders.map(o => `
+        <div class="nb-box bg-white p-4 space-y-2">
+          <div class="flex justify-between font-extrabold text-sm"><span>ID: #${o.id.slice(-6)}</span><span class="nb-badge bg-[#FACC15]">${o.status}</span></div>
+          <p class="text-xs font-semibold">Total: ${formatRupiah(o.totalAmount)}</p>
+        </div>
+      `).join("");
+    };
+
+    function loadProfileForm() {
+      document.getElementById("prof-name").value = currentUser.name;
+      document.getElementById("prof-wa").value = currentUser.wa || "";
+      document.getElementById("prof-address").value = currentUser.address || "";
+    }
+
+    window.saveUserProfile = async function(e) {
+      e.preventDefault();
+      const updated = {
+        name: document.getElementById("prof-name").value,
+        wa: document.getElementById("prof-wa").value,
+        address: document.getElementById("prof-address").value
+      };
+      await fetch(`${API_URL}/users/${currentUser.uid}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      });
+      showToast("Profil diperbarui di MongoDB!", "success");
+    };
+
+    window.confirmDeleteBuyerAccount = async function() {
+      if (!confirm("Hapus akun permanen?")) return;
+      await fetch(`${API_URL}/users/${currentUser.uid}`, { method: "DELETE" });
+      handleLogout();
+      showToast("Akun terhapus dari database.", "warning");
+    };
+
+    window.switchAdminTab = function(tab) {
+      document.getElementById("admin-panel-orders").classList.toggle("hidden", tab !== "orders");
+      document.getElementById("admin-panel-products").classList.toggle("hidden", tab !== "products");
+    };
+
+    function renderAdminOrders() {
+      const c = document.getElementById("admin-panel-orders");
+      if (!c) return;
+      c.innerHTML = orders.map(o => `
+        <div class="nb-box bg-white p-4 space-y-2">
+          <p class="font-extrabold">${o.buyerName} - ${formatRupiah(o.totalAmount)}</p>
+          <span class="nb-badge bg-[#FACC15]">${o.status}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderAdminProducts() {
+      const c = document.getElementById("admin-products-list");
+      if (!c) return;
+      c.innerHTML = products.map(p => `
+        <div class="nb-box bg-white p-3 text-xs font-extrabold flex justify-between items-center">
+          <span>${p.name} (Stok: ${p.stock})</span>
+          <button onclick="adminDeleteProduct('${p.id}')" class="nb-btn bg-[#F472B6] px-2 py-1">Hapus</button>
+        </div>
+      `).join("");
+    }
+
+    window.handleAdminAddProduct = async function(e) {
+      e.preventDefault();
+      const newProd = {
+        id: "prod_" + Date.now(),
+        name: document.getElementById("new-prod-name").value,
+        price: Number(document.getElementById("new-prod-price").value),
+        stock: Number(document.getElementById("new-prod-stock").value),
+        description: document.getElementById("new-prod-desc").value,
+        image: document.getElementById("new-prod-img").value
+      };
+      await fetch(`${API_URL}/products`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProd)
+      });
+      e.target.reset();
+      showToast("Produk baru masuk MongoDB!", "success");
+    };
+
+    window.adminDeleteProduct = async function(id) {
+      await fetch(`${API_URL}/products/${id}`, { method: "DELETE" });
+      showToast("Produk dihapus.");
+    };
+
+    function renderChatSidebar() {
+      const area = document.getElementById("private-chat-selector-area");
+      if (currentUser.role === 'admin') {
+        const buyers = allUsers.filter(u => u.role !== 'admin');
+        area.innerHTML = buyers.map(b => `<button onclick="selectChatChannel('private_${b.uid}')" class="nb-btn bg-white w-full p-2 text-xs mb-1">Chat: ${b.name}</button>`).join("");
+      }
+    }
+
+    window.selectChatChannel = function(ch) { activeChatChannel = ch; renderChatMessages(); };
+
+    function renderChatMessages() {
+      const feed = document.getElementById("chat-messages-feed");
+      if (!feed) return;
+      const msgs = chatMessages.filter(m => m.channel === activeChatChannel);
+      feed.innerHTML = msgs.map(m => `
+        <div class="flex flex-col ${m.senderId === currentUser.uid ? 'items-end' : 'items-start'}">
+          <div class="nb-box-sm bg-white p-2 text-xs">
+            <span class="font-extrabold">${m.senderName}:</span> ${m.text}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    window.sendChatMessage = async function(e) {
+      e.preventDefault();
+      const input = document.getElementById("chat-message-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const msg = {
+        id: "msg_" + Date.now(),
+        channel: activeChatChannel,
+        senderId: currentUser.uid,
+        senderName: currentUser.name,
+        senderRole: currentUser.role,
+        text
+      };
+
+      await fetch(`${API_URL}/messages`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(msg)
+      });
+      input.value = "";
+    };
+
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      syncWithMongoDB();
+    });
+  </script>
+</body>
+</html>
