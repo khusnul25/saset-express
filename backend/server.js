@@ -15,26 +15,40 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// Koneksi Mongoose yang aman untuk Serverless Vercel
-let isConnected = false;
+// Koneksi Mongoose yang dioptimalkan untuk Vercel Serverless
+let cachedDb = null;
 async function connectDB() {
-  if (isConnected) return;
+  if (cachedDb && mongoose.connection.readyState === 1) {
+    return cachedDb;
+  }
   try {
-    if (!MONGO_URI) throw new Error("MONGO_URI tidak ditemukan!");
-    await mongoose.connect(MONGO_URI);
-    isConnected = true;
+    if (!MONGO_URI) throw new Error("MONGO_URI tidak ditemukan di Environment Variables!");
+    const db = await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    cachedDb = db;
     console.log("✅ Berhasil terhubung ke MongoDB Atlas!");
-    await seedInitialData();
+    return db;
   } catch (err) {
     console.error("❌ Gagal terhubung ke MongoDB:", err.message);
+    throw err;
   }
 }
 
-async function seedInitialData() {
+// Route Root
+app.get('/', (req, res) => {
+  res.json({ status: "success", message: "Saset Express Backend Aktif & Berjalan Normal!" });
+});
+
+// Endpoint Sync Utama (Dilengkapi Pembuatan Akun Admin Otomatis Jika Kosong)
+app.get('/api/sync', async (req, res) => {
   try {
-    const adminCount = await User.countDocuments({ role: 'admin' });
-    if (adminCount === 0) {
-      await User.create({
+    await connectDB();
+
+    // Pastikan akun admin master selalu ada agar tidak pernah kosong
+    let admin = await User.findOne({ email: 'admin@saset.com' });
+    if (!admin) {
+      admin = await User.create({
         uid: 'admin_master_saset',
         name: 'Admin Saset Express',
         email: 'admin@saset.com',
@@ -46,6 +60,7 @@ async function seedInitialData() {
       });
     }
 
+    // Pastikan produk awal selalu ada
     const prodCount = await Product.countDocuments();
     if (prodCount === 0) {
       await Product.insertMany([
@@ -68,41 +83,23 @@ async function seedInitialData() {
       ]);
     }
 
-    const msgCount = await Message.countDocuments();
-    if (msgCount === 0) {
-      await Message.create({
-        id: 'msg_1',
-        channel: 'group',
-        senderId: 'admin_master_saset',
-        senderName: 'Admin Saset Express',
-        senderRole: 'admin',
-        text: 'Halo! Selamat datang di Grup Komunitas Saset Express. Seluruh data kini terhubung ke MongoDB Atlas.'
-      });
-    }
-  } catch (err) {
-    console.error("Gagal melakukan seeding data awal:", err);
-  }
-}
+    const users = await User.find().lean() || [];
+    const products = await Product.find().sort({ createdAt: -1 }).lean() || [];
+    const orders = await Order.find().sort({ createdAt: -1 }).lean() || [];
+    const messages = await Message.find().sort({ createdAt: 1 }).lean() || [];
+    const setting = await Setting.findOne({ key: 'store' }).lean() || { qrisImage: '' };
 
-// Route Root
-app.get('/', (req, res) => {
-  res.json({ status: "success", message: "Saset Express Backend Aktif!" });
-});
-
-// Endpoint Sync dengan Penanganan Error yang Aman
-app.get('/api/sync', async (req, res) => {
-  try {
-    await connectDB();
-    const users = await User.find() || [];
-    const products = await Product.find().sort({ createdAt: -1 }) || [];
-    const orders = await Order.find().sort({ createdAt: -1 }) || [];
-    const messages = await Message.find().sort({ createdAt: 1 }) || [];
-    const setting = await Setting.findOne({ key: 'store' }) || { qrisImage: '' };
-    
-    res.json({ users, products, orders, messages, qrisImage: setting.qrisImage || '' });
+    res.json({ users, products, orders, messages, qrisImage: setting?.qrisImage || '' });
   } catch (err) {
     console.error("API Sync Error:", err);
-    res.status(500).json({ users: [], products: [], orders: [], messages: [], error: err.message });
+    res.status(500).json({ 
+      users: [], 
+      products: [], 
+      orders: [], 
+      messages: [], 
+      qrisImage: '', 
+      error: err.message 
+    });
   }
 });
 
