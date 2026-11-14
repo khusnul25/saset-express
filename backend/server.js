@@ -15,16 +15,19 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// Koneksi ke MongoDB Atlas
-if (MONGO_URI) {
-  mongoose.connect(MONGO_URI)
-    .then(async () => {
-      console.log("✅ Berhasil terhubung ke MongoDB Atlas!");
-      await seedInitialData();
-    })
-    .catch(err => console.error("❌ Gagal terhubung ke MongoDB:", err));
-} else {
-  console.error("❌ MONGO_URI tidak ditemukan di Environment Variables!");
+// Koneksi Mongoose yang aman untuk Serverless Vercel
+let isConnected = false;
+async function connectDB() {
+  if (isConnected) return;
+  try {
+    if (!MONGO_URI) throw new Error("MONGO_URI tidak ditemukan!");
+    await mongoose.connect(MONGO_URI);
+    isConnected = true;
+    console.log("✅ Berhasil terhubung ke MongoDB Atlas!");
+    await seedInitialData();
+  } catch (err) {
+    console.error("❌ Gagal terhubung ke MongoDB:", err.message);
+  }
 }
 
 async function seedInitialData() {
@@ -38,7 +41,7 @@ async function seedInitialData() {
         password: 'admin123',
         role: 'admin',
         address: 'Kebun Utama Saset Express, Surabaya',
-        wa: '085182291658',
+        wa: '081200009999',
         photo: 'https://placehold.co/150x150/FACC15/0F172A?text=ADMIN'
       });
     }
@@ -81,32 +84,31 @@ async function seedInitialData() {
   }
 }
 
-// === TAMBAHAN UTAMA: Mencegah error 404 di Root URL Vercel ===
+// Route Root
 app.get('/', (req, res) => {
-  res.json({ 
-    status: "success", 
-    message: "🚀 Saset Express Backend API Berjalan Normal & Terhubung ke MongoDB Atlas!",
-    timestamp: Date.now() 
-  });
+  res.json({ status: "success", message: "Saset Express Backend Aktif!" });
 });
 
-// --- API ENDPOINTS ---
-
+// Endpoint Sync dengan Penanganan Error yang Aman
 app.get('/api/sync', async (req, res) => {
   try {
-    const users = await User.find();
-    const products = await Product.find().sort({ createdAt: -1 });
-    const orders = await Order.find().sort({ createdAt: -1 });
-    const messages = await Message.find().sort({ createdAt: 1 });
+    await connectDB();
+    const users = await User.find() || [];
+    const products = await Product.find().sort({ createdAt: -1 }) || [];
+    const orders = await Order.find().sort({ createdAt: -1 }) || [];
+    const messages = await Message.find().sort({ createdAt: 1 }) || [];
     const setting = await Setting.findOne({ key: 'store' }) || { qrisImage: '' };
-    res.json({ users, products, orders, messages, qrisImage: setting.qrisImage });
+    
+    res.json({ users, products, orders, messages, qrisImage: setting.qrisImage || '' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("API Sync Error:", err);
+    res.status(500).json({ users: [], products: [], orders: [], messages: [], error: err.message });
   }
 });
 
 app.post('/api/users', async (req, res) => {
   try {
+    await connectDB();
     const user = new User(req.body);
     await user.save();
     res.json({ success: true, user });
@@ -117,6 +119,7 @@ app.post('/api/users', async (req, res) => {
 
 app.put('/api/users/:uid', async (req, res) => {
   try {
+    await connectDB();
     const updated = await User.findOneAndUpdate({ uid: req.params.uid }, req.body, { new: true });
     res.json({ success: true, updated });
   } catch (err) {
@@ -126,6 +129,7 @@ app.put('/api/users/:uid', async (req, res) => {
 
 app.delete('/api/users/:uid', async (req, res) => {
   try {
+    await connectDB();
     await User.findOneAndDelete({ uid: req.params.uid });
     await Message.deleteMany({ channel: `private_${req.params.uid}` });
     res.json({ success: true });
@@ -136,6 +140,7 @@ app.delete('/api/users/:uid', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
+    await connectDB();
     const prod = new Product(req.body);
     await prod.save();
     res.json({ success: true, prod });
@@ -146,6 +151,7 @@ app.post('/api/products', async (req, res) => {
 
 app.put('/api/products/:id', async (req, res) => {
   try {
+    await connectDB();
     const updated = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
     res.json({ success: true, updated });
   } catch (err) {
@@ -155,6 +161,7 @@ app.put('/api/products/:id', async (req, res) => {
 
 app.delete('/api/products/:id', async (req, res) => {
   try {
+    await connectDB();
     await Product.findOneAndDelete({ id: req.params.id });
     res.json({ success: true });
   } catch (err) {
@@ -164,6 +171,7 @@ app.delete('/api/products/:id', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
+    await connectDB();
     const { items, ...orderData } = req.body;
     for (const item of items) {
       const p = await Product.findOne({ id: item.productId });
@@ -182,6 +190,7 @@ app.post('/api/orders', async (req, res) => {
 
 app.put('/api/orders/:id', async (req, res) => {
   try {
+    await connectDB();
     const updated = await Order.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
     res.json({ success: true, updated });
   } catch (err) {
@@ -191,6 +200,7 @@ app.put('/api/orders/:id', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
   try {
+    await connectDB();
     const msg = new Message(req.body);
     await msg.save();
     res.json({ success: true, msg });
@@ -201,6 +211,7 @@ app.post('/api/messages', async (req, res) => {
 
 app.post('/api/settings/qris', async (req, res) => {
   try {
+    await connectDB();
     await Setting.findOneAndUpdate(
       { key: 'store' },
       { qrisImage: req.body.qrisImage },
