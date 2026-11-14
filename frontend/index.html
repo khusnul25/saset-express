@@ -57,11 +57,12 @@
             <span class="text-xs font-extrabold uppercase">MongoDB Atlas Cloud Connected</span>
           </div>
           <h1 class="font-display text-4xl sm:text-5xl font-extrabold mb-4">SASET<br/>EXPRESS</h1>
-          <p class="font-semibold text-slate-900 leading-relaxed mb-6">Seluruh data akun, pesanan, dan chat terhubung terpusat secara real-time ke database MongoDB.</p>
+          <p class="font-semibold text-slate-900 leading-relaxed mb-6">Solusi belanja sayur segar hidroponik dan organik harian kilat langsung dari petani lokal.</p>
         </div>
       </div>
       <div class="lg:col-span-7 nb-box-lg bg-white p-6 sm:p-8 flex flex-col justify-between">
         <div>
+          <!-- Tab Auth dengan Indikator Warna Oranye/Kuning yang Kembali Berfungsi Aktif -->
           <div class="grid grid-cols-2 gap-3 mb-6 bg-[#FEFCE8] p-2 nb-box-sm">
             <button type="button" id="tab-login" onclick="switchAuthTab('login')" class="nb-btn bg-[#FACC15] py-2.5 text-sm">Masuk Akun</button>
             <button type="button" id="tab-register" onclick="switchAuthTab('register')" class="nb-btn bg-white py-2.5 text-sm">Daftar Pembeli</button>
@@ -134,7 +135,7 @@
             <div><label class="block text-sm font-extrabold mb-1">Alamat</label><textarea id="prof-address" rows="3" required class="nb-input"></textarea></div>
             <button type="submit" class="nb-btn bg-[#A3E635] px-6 py-3">Simpan Profil</button>
           </form>
-          <div id="buyer-delete-account-zone" class="hidden mt-6 pt-4 border-t-2 border-dashed border-slate-900">
+          <div id="buyer-delete-account-zone" class="mt-6 pt-4 border-t-2 border-dashed border-slate-900">
             <button onclick="confirmDeleteBuyerAccount()" class="nb-btn bg-[#F472B6] px-4 py-2 text-xs">Hapus Akun Permanen</button>
           </div>
         </div>
@@ -208,6 +209,7 @@
   </div>
 
   <script>
+    // Sesuaikan URL Backend Anda (jika backend di Vercel, ubah ke URL backend vercel Anda)
     const API_URL = "http://localhost:5000/api";
     let currentUser = null;
     let allUsers = [], products = [], orders = [], chatMessages = [], storeSettings = { qrisImage: "" };
@@ -250,9 +252,22 @@
 
     setInterval(syncWithMongoDB, 2500);
 
+    // Fungsi Indikator Warna Tab Auth yang Aktif Kembali Normal
     window.switchAuthTab = function(tab) {
-      document.getElementById("form-login").classList.toggle("hidden", tab !== "login");
-      document.getElementById("form-register").classList.toggle("hidden", tab !== "register");
+      const loginBtn = document.getElementById("tab-login");
+      const regBtn = document.getElementById("tab-register");
+      
+      if (tab === 'login') {
+        loginBtn.className = "nb-btn bg-[#FACC15] py-2.5 text-sm";
+        regBtn.className = "nb-btn bg-white py-2.5 text-sm";
+        document.getElementById("form-login").classList.remove("hidden");
+        document.getElementById("form-register").classList.add("hidden");
+      } else {
+        regBtn.className = "nb-btn bg-[#FACC15] py-2.5 text-sm";
+        loginBtn.className = "nb-btn bg-white py-2.5 text-sm";
+        document.getElementById("form-register").classList.remove("hidden");
+        document.getElementById("form-login").classList.add("hidden");
+      }
     };
 
     window.handleLogin = async function(e) {
